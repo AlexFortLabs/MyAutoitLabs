@@ -1,0 +1,2 @@
+Polozhite fajl test.txt (c ljubym soderzhaniem) v papku so skriptom, skompilirujte sledujushhij skript:
+Skopirujte EXE v otdel'nuju papku i zapustite - vse sami uvidite.
