@@ -8,7 +8,7 @@ User,gblnWinUserModus,<setting)
 
 Funkegruppe.de\userdata\userprofile\<User>\Anwendungsdaten\olitas\ISRCMN
 
-\\funkegruppe.de\userdata\Userprofile\[CasperRa]\Anwendungsdaten\Solitas\ISRCMN.INI
+\\funkegruppe.de\userdata\Userprofile\[CaxxxRa]\Anwendungsdaten\Solitas\ISRCMN.INI
 
 
 INI Eintrag 
@@ -18,5 +18,3 @@ gblnWinUserModus=0                                 ‚ oder 1 bei 1 werden Windows
 
 Mit freundlichen Grüßen 
 Kind regards 
-Gerald Rohrbach 
--Leiter EDV -
