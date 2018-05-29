@@ -16,14 +16,21 @@
 #include <Array.au3>
 #include <MsgBoxConstants.au3>
 
-$sPath = '\\funkegruppe.de\userdata\Userprofile\'
-$sFile1 = 'ISRCMN.INI'
+Local $sPath = '\\funkegruppe.de\userdata\Userprofile\'
+Local $sFile1 = 'ISRCMN.INI'
+Local $my_Date = 'DATUM:'&@MDAY&":"&@MON&":"&@YEAR&' UHR:'&@HOUR&':'&@MIN&':'&@SEC
+
 ; Erstellt eine konstante Variable im lokalen Bereich des Dateipfads der gelesen bzw. in den geschrieben werden soll.
 Const $sFilePathErgebnis = FileOpen(@DesktopDir & "\solitas.txt", $FO_APPEND)
     If $sFilePathErgebnis = -1 Then
         MsgBox($MB_SYSTEMMODAL, "Fehler", "Kann solitas.txt nicht öffnen.")
 		Exit
     EndIf
+
+FileWrite($sFilePathErgebnis, "---------------------------------" &@CRLF)
+FileWrite($sFilePathErgebnis, "+ " &$my_Date &" +" &@CRLF)
+FileWrite($sFilePathErgebnis, "---------------------------------" &@CRLF)
+FileWrite($sFilePathErgebnis, " " & @CRLF)
 
 $aDirs = _FileListToArray($sPath, '*', 2) ; das Array $aDirs enthält die Namen der Unterverzeichnisse von $sPath
 If Not @error Then
