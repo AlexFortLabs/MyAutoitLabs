@@ -28,9 +28,10 @@ Global $sStrNanchname
 Global $sStrNanchnameOK
 Global $sStrVorname
 Global $sStrVornameOK
-Global $sPasswd
+Global $sPasswd = "123456"
 Global $sStrADUser = "Test-User"
 Global $sStrADUserText = "Bianco Melanie"
+Global $sDescription = "Mitarbeiter Vertrieb"
 Global $sStrADUseBIG
 
 ; Ermittelten FQDN für aktuellen User
@@ -88,6 +89,10 @@ Func _UserNameSetzen()
 	$sStrVornameOK = _StringKurzen($sStrVornameOK, 2)
 	MsgBox($MB_SYSTEMMODAL, "", $sStrVorname & " ist umgewandelt in:" & @CRLF & @CRLF & $sStrVornameOK)
 
+; Attribute abfragen
+	$sDescription = InputBox("Benutzer Beschreibung", "Bitte eingeben." & @CRLF & " z.B : Azubi Vertrieb", $sDescription, "")
+
+
 ; AD-Benutzername Zusammensetzung
 	$sStrADUser = $sStrNanchnameOK & $sStrVornameOK		; für AD
 	$sStrADUserText = $sStrNanchname & "\, " & $sStrVorname
@@ -106,6 +111,32 @@ Func _UserNameSetzen()
     MsgBox($MB_SYSTEMMODAL, "", $sPasswd)
 
 EndFunc 	;==>_UserNameSetzen
+
+Func _PasswordSetzen($sUser, $sPasswd)
+	; Sets or clears the password for a user or computer
+	Local $iValueModPasswd = _AD_SetPassword($sUser, $sPasswd)
+	If $iValueModPasswd = 1 Then
+		MsgBox(64, "Active Directory Password", "Password für '" & $sUser & "' gesetzt")
+	ElseIf @error = 1 Then
+		MsgBox(64, "Active Directory Password", "User '" & $sUser & "' does not exist")
+	Else
+		MsgBox(64, "Active Directory Password", "Return code '" & @error & "' from Active Directory")
+	EndIf
+
+EndFunc 	;==>_PasswordSetzen
+
+Func _AttributeSetzen($sUser, $sDescription)
+	; Change attribute
+	Local $iValueModDescript = _AD_ModifyAttribute($sUser, "description", $sDescription)
+	If $iValueModDescript = 1 Then
+		MsgBox(64, "Active Directory Attribut", "Beschreibung für '" & $sUser & "' hinterlegt")
+	ElseIf @error = 1 Then
+		MsgBox(64, "Active Directory Attribut", "User '" & $sUser & "' does not exist")
+	Else
+		MsgBox(64, "Active Directory Attribut", "Return code '" & @error & "' from Active Directory")
+	EndIf
+
+EndFunc		;==>_AttributeSertzen
 
 ;To search for a user name (full or partial) you can use something like:
 ;	Global $asUser = StringLeft(@UserName, 1)
@@ -141,6 +172,8 @@ WEnd
 Global $iValue = _AD_CreateUser($sOU, $sUser, $sStrADUserText)
 If $iValue = 1 Then
     MsgBox(64, "Active Directory Manipulation Ergebnis", "User '" & $sUser & "' in OU '" & $sOU & "' erfolgreich erstellt")
+	_AttributeSetzen($sUser, $sDescription)
+	_PasswordSetzen($sUser, $sPasswd)
 ElseIf @error = 1 Then
     MsgBox(64, "Active Directory Manipulation Ergebnis", "User '" & $sUser & "' ist bereits vorhanden")
 ElseIf @error = 2 Then
