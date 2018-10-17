@@ -35,7 +35,7 @@ Global $sNickName					; r.toews
 Global $sPasswd = "123456"
 Global $sStrADUser = "Test-User"	; ToewsRu
 Global $sStrADUserText = "Bianco Melanie"
-Global $sDescription = "Mitarbeiter Vertrieb"
+Global $sDescription = "== Mitarbeiter Vertrieb =="
 Global $sStrADUseBIG				; TOEWSRU
 Global $sHomeDirectory = "\\funkegruppe.de\userdata\Userlaufwerk\"
 Global $sHomeDrive = "P:"
@@ -127,7 +127,7 @@ Func _PasswordSetzen($sUser, $sPasswd)
 	; Sets or clears the password for a user or computer
 	Local $iValueModPasswd = _AD_SetPassword($sUser, $sPasswd)
 	If $iValueModPasswd = 1 Then
-		MsgBox(64, "Active Directory Password", "Passwort für '" & $sUser & "' gesetzt")
+		;MsgBox(64, "Active Directory Password", "Passwort für '" & $sUser & "' gesetzt")
 	ElseIf @error = 1 Then
 		MsgBox(64, "Active Directory Password", "User '" & $sUser & "' does not exist")
 	Else
@@ -140,7 +140,7 @@ Func _AttributeSetzenUnivers($sUser, $sAttrubut, $sAttrWert)
 	; Change attribute
 	Local $iValueModDescript = _AD_ModifyAttribute($sUser, $sAttrubut, $sAttrWert)
 	If $iValueModDescript = 1 Then
-		MsgBox(64, "Active Directory Attribut", "Attribut '" & $sAttrubut & "' hinterlegt")
+		;MsgBox(64, "Active Directory Attribut", "Attribut '" & $sAttrubut & "' hinterlegt")
 	ElseIf @error = 1 Then
 		MsgBox(64, "Active Directory Attribut", "User '" & $sUser & "' does not exist")
 	Else
@@ -153,7 +153,7 @@ Func _GruppenMitglied($sUser, $sGroup)
 	; Add user to group
 	Local $iValue = _AD_AddUserToGroup($sGroup, $sUser)
 	If $iValue = 1 Then
-		MsgBox(64, "Active Directory Gruppenmitglied", "User '" & $sUser & "' erfolgreich hinzugefügt zu '" & $sGroup & "'")
+		;MsgBox(64, "Active Directory Gruppenmitglied", "User '" & $sUser & "' erfolgreich hinzugefügt zu '" & $sGroup & "'")
 	ElseIf @error = 1 Then
 		MsgBox(64, "Active Directory Gruppenmitglied", "Gruppe '" & $sGroup & "' nicht vorhanden")
 	ElseIf @error = 2 Then
@@ -165,6 +165,27 @@ Func _GruppenMitglied($sUser, $sGroup)
 	EndIf
 
 EndFunc		;==>_GruppenMitglied
+
+Func _BasisOrdner($sUser)
+
+	Local $sBasisFolder = $sHomeDirectory & $sUser
+	DirCreate($sBasisFolder)
+	If FileExists($sBasisFolder) Then
+		MsgBox(4096, "", $sBasisFolder & " wurde angelegt.")
+		; Ordner Besitzer & Vollzugriff für User (inklusive Unterordner)
+		; icacls D:\Beispielordner /grant znil\Beispielgruppe:(CI)(OI)(M)
+		Local $sCommand = "icacls " & $sBasisFolder & " /grant " & $sUser & ":(CI)(OI)(F)"
+		Local $sCommandOwner = "icacls " & $sBasisFolder & " /setowner " & $sUser & " /T /C" 	; "takeown /U " & $sUser & " /F " & $sBasisFolder & " /R /D Y /SKIPSL"
+
+		Local $iPID = Run(@ComSpec & " /C " & $sCommand, "", @SW_HIDE, 8)
+		MsgBox($MB_SYSTEMMODAL, "PID", $sCommand & ": " & $iPID)
+
+		$iPID = Run(@ComSpec & " /C " & $sCommandOwner, "", @SW_HIDE, 8)
+		MsgBox($MB_SYSTEMMODAL, "PID", $sCommandOwner & ": " & $iPID)
+
+	EndIf
+
+EndFunc 	;==>_BasisOrdner
 
 ; Eingaben zu OU und dem User
 #region ### START Koda GUI section ### Form=
@@ -216,6 +237,7 @@ If $iValue = 1 Then
 	_GruppenMitglied($sUser, "vDesktop-FHU-01")
 	_GruppenMitglied($sUser, "Benutzer SoftM DE")
 	_PasswordSetzen($sUser, $sPasswd)
+	_BasisOrdner($sUser)
 ElseIf @error = 1 Then
     MsgBox(64, "Active Directory Manipulation Ergebnis", "User '" & $sUser & "' ist bereits vorhanden")
 ElseIf @error = 2 Then
