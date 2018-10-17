@@ -167,21 +167,21 @@ Func _GruppenMitglied($sUser, $sGroup)
 EndFunc		;==>_GruppenMitglied
 
 Func _BasisOrdner($sUser)
-
+	; Ordner Besitzer & Vollzugriff für User (inklusive Unterordner)
 	Local $sBasisFolder = $sHomeDirectory & $sUser
 	DirCreate($sBasisFolder)
 	If FileExists($sBasisFolder) Then
 		MsgBox(4096, "", $sBasisFolder & " wurde angelegt.")
-		; Ordner Besitzer & Vollzugriff für User (inklusive Unterordner)
+
 		; icacls D:\Beispielordner /grant znil\Beispielgruppe:(CI)(OI)(M)
 		Local $sCommand = "icacls " & $sBasisFolder & " /grant " & $sUser & ":(CI)(OI)(F)"
 		Local $sCommandOwner = "icacls " & $sBasisFolder & " /setowner " & $sUser & " /T /C" 	; "takeown /U " & $sUser & " /F " & $sBasisFolder & " /R /D Y /SKIPSL"
 
 		Local $iPID = Run(@ComSpec & " /C " & $sCommand, "", @SW_HIDE, 8)
-		MsgBox($MB_SYSTEMMODAL, "PID", $sCommand & ": " & $iPID)
+		;MsgBox($MB_SYSTEMMODAL, "PID", $sCommand & ": " & $iPID)
 
 		$iPID = Run(@ComSpec & " /C " & $sCommandOwner, "", @SW_HIDE, 8)
-		MsgBox($MB_SYSTEMMODAL, "PID", $sCommandOwner & ": " & $iPID)
+		;MsgBox($MB_SYSTEMMODAL, "PID", $sCommandOwner & ": " & $iPID)
 
 	EndIf
 
