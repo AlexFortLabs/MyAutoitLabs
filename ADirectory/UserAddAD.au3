@@ -166,7 +166,7 @@ Func _GruppenMitglied($sUser, $sGroup)
 
 EndFunc		;==>_GruppenMitglied
 
-Func _BasisOrdner($sUser)
+Func _BasisOrdnerCreate($sUser)
 	; Ordner Besitzer & Vollzugriff für User (inklusive Unterordner)
 	Local $sBasisFolder = $sHomeDirectory & $sUser
 	DirCreate($sBasisFolder)
@@ -178,10 +178,10 @@ Func _BasisOrdner($sUser)
 		Local $sCommandOwner = "icacls " & $sBasisFolder & " /setowner " & $sUser & " /T /C" 	; "takeown /U " & $sUser & " /F " & $sBasisFolder & " /R /D Y /SKIPSL"
 
 		Local $iPID = Run(@ComSpec & " /C " & $sCommand, "", @SW_HIDE, 8)
-		;MsgBox($MB_SYSTEMMODAL, "PID", $sCommand & ": " & $iPID)
+		MsgBox($MB_SYSTEMMODAL, "PID", $sCommand & ": " & $iPID)
 
 		$iPID = Run(@ComSpec & " /C " & $sCommandOwner, "", @SW_HIDE, 8)
-		;MsgBox($MB_SYSTEMMODAL, "PID", $sCommandOwner & ": " & $iPID)
+		MsgBox($MB_SYSTEMMODAL, "PID", $sCommandOwner & ": " & $iPID)
 
 	EndIf
 
@@ -215,16 +215,20 @@ WEnd
 Global $iValue = _AD_CreateUser($sOU, $sUser, $sStrADUserText)
 If $iValue = 1 Then
     MsgBox(64, "Active Directory Manipulation Ergebnis", "User '" & $sUser & "' in OU '" & $sOU & "' erfolgreich erstellt")
-	_AttributeSetzenUnivers($sUser, "description", $sDescription)
-	_AttributeSetzenUnivers($sUser, "displayName", $sStrADUserRoh)
-	_AttributeSetzenUnivers($sUser, "givenName", $sStrVorname)
+	;Sleep(2000)
+	_AttributeSetzenUnivers($sUser, "name", $sStrADUserRoh)							; +Strätker, Markus
+	_AttributeSetzenUnivers($sUser, "displayName", $sStrADUserRoh)					; Strätker, Markus
+	_AttributeSetzenUnivers($sUser, "description", $sDescription)					; == Logistik ==
+	_AttributeSetzenUnivers($sUser, "givenName", $sStrVorname)						; Markus
+	_AttributeSetzenUnivers($sUser, "userAccountControl", 512)						; 512 - NORMAL_ACCOUNT (Учетная запись по умолчанию. Обычная активная учетная запись)
 	_AttributeSetzenUnivers($sUser, "homeDirectory", $sHomeDirectory & $sStrADUser)
 	_AttributeSetzenUnivers($sUser, "homeDrive", $sHomeDrive)
 	_AttributeSetzenUnivers($sUser, "l", "Hamm")
-	_AttributeSetzenUnivers($sUser, "mail", $sNickName & "@" & $sDomainName)
-	_AttributeSetzenUnivers($sUser, "mailNickname", $sNickName)
+	;_AttributeSetzenUnivers($sUser, "mail", $sNickName & "@" & $sDomainName)
+	;_AttributeSetzenUnivers($sUser, "mailNickname", $sNickName)
+	;_AttributeSetzenUnivers($sUser, "physicalDeliveryOfficeName", "Büro Halle 3") 	; Büro Halle 3
 	_AttributeSetzenUnivers($sUser, "postalCode", "59071")
-	_AttributeSetzenUnivers($sUser, "sn", $sStrNanchname)
+	_AttributeSetzenUnivers($sUser, "sn", $sStrNanchname)							; Strätker
 	_AttributeSetzenUnivers($sUser, "st", "NRW")
 	_AttributeSetzenUnivers($sUser, "streetAddress", "Siegenbeckstraße 15")
 	_AttributeSetzenUnivers($sUser, "telephoneNumber", "02388 3071-")
@@ -233,11 +237,18 @@ If $iValue = 1 Then
 	_AttributeSetzenUnivers($sUser, "countryCode", "276")
 	_AttributeSetzenUnivers($sUser, "c", "DE")
 	_AttributeSetzenUnivers($sUser, "co", "Deutschland")
+	; ExchangeQuotas setzen
+	_AttributeSetzenUnivers($sUser, "mDBStorageQuota", "503317")
+	_AttributeSetzenUnivers($sUser, "mDBOverQuotaLimit", "524288")
+	_AttributeSetzenUnivers($sUser, "mDBOverHardQuotaLimit", "629146")
+	_AttributeSetzenUnivers($sUser, "mAPIRecipient", "TRUE")
+	; Gruppenmitgliedschaft
 	_GruppenMitglied($sUser, "Benutzer")
 	_GruppenMitglied($sUser, "vDesktop-FHU-01")
 	_GruppenMitglied($sUser, "Benutzer SoftM DE")
 	_PasswordSetzen($sUser, $sPasswd)
-	_BasisOrdner($sUser)
+	_BasisOrdnerCreate($sUser)
+
 ElseIf @error = 1 Then
     MsgBox(64, "Active Directory Manipulation Ergebnis", "User '" & $sUser & "' ist bereits vorhanden")
 ElseIf @error = 2 Then
