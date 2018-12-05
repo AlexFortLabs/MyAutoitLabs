@@ -1,7 +1,7 @@
 #include <ad.au3>
 #include <array.au3>
 
-Global $OU = "OU=admins,DC=funkegruppe,DC=de"		; ?????
+Global $OU = "OU=admins,DC=funkegruppe,DC=de"		; hier nacharbeiten wegen $aGroups ERROR
 Global $aGroups, $aGroupMembers
 
 _AD_Open()
