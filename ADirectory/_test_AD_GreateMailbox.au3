@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=favicon.ico
 #AutoIt3Wrapper_Outfile_x64=_test_AD_GreateMailbox.exe
-#AutoIt3Wrapper_UseX64=y
+#AutoIt3Wrapper_UseX64=Y
 #AutoIt3Wrapper_AU3Check_Stop_OnWarning=Y
 #AutoIt3Wrapper_AU3Check_Parameters=-d -w 1 -w 2 -w 3 -w 4 -w 5 -w 6
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -15,7 +15,9 @@
 #include <WindowsConstants.au3>
 
 ; Open Connection to the Active Directory
+
 _AD_Open()
+;_AD_Open("funkegruppe\it", "geheim1")
 If @error Then Exit MsgBox(16, "Active Directory Example Skript", "Function _AD_Open encountered a problem. @error = " & @error & ", @extended = " & @extended)
 
 Global $iReply = MsgBox(308, "Active Directory Functions - Example 1", "This script creates a mailbox for a user." & @CRLF & @CRLF & _
@@ -36,6 +38,10 @@ EndIf
 ; Enter the necessary data
 #region ### START Koda GUI section ### Form=
 Global $Form1 = GUICreate("Active Directory Functions - Example 1", 514, 252)
+GUICtrlSetFont(-1, 10, 800, 0, "Arial")
+GUICtrlSetColor(-1, 0x33cc00)
+GUICtrlSetBkColor(-1, 0xffffff)
+GUISetBkColor("0xA0A0A0")
 GUICtrlCreateLabel("User account (FQDN or samAccountName):", 8, 10, 231, 17)
 GUICtrlCreateLabel("Mailbox storename:", 8, 42, 231, 17)
 GUICtrlCreateLabel("Information store:", 8, 74, 231, 17)
@@ -70,7 +76,10 @@ While 1
 WEnd
 
 ; Create Mailbox
-Global $iValue = _AD_CreateMailbox($sUser, $sMailbox, $sIStore, $sServer, $sGroup, $sServerGroup)
+;Global $mailServer = $sServer		; DESVR-MAIL01
+;Global $iValue = _AD_CreateMailbox($sUser, $sMailbox, $sIStore, $sServer, $sGroup, $sServerGroup)
+;Global $iValue = _AD_CreateMailbox($sUser, "Mailbox Store (" & $sServer & ")")
+Global $iValue = _AD_CreateMailbox($sUser, "Mailbox Store (" & $sMailbox & ")", "First Storage Group", $sServer, "First Administrative Group", $sServerGroup)
 ;Global $iValue = _AD_CreateMailbox($sUser, "smtp.funkegruppe.de") 	;"Mailbox Store (" & $sServer & ")")
 ;Global $iValue = _AD_CreateMailboxPS($sUser, "desvr-mail-fws.funkegruppe.de") 	; per PShell - habe Code 7
 If $iValue = 1 Then

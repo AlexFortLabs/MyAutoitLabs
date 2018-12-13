@@ -35,8 +35,10 @@ HotKeySet("{ESC}", "_Exit")
 ; *****************************************************************************
 
 ; Bau Verbindung zu Active Directory
+;_AD_Open($SUserId, $SPassword,)
+;_AD_Open("funkegruppe\idmin", "geheim")
 _AD_Open()
-If @error Then Exit MsgBox(16, "Active Directory Skript", "Unerwartetes Problem in der Funktion _AD_Open. @error = " & @error & ", @extended = " & @extended)
+If @error Then Exit MsgBox(16, "Active Directory Skript", "Unerwartetes Problem in der Funktion _AD_Open. @error: " & @CRLF & @CRLF & @error & ", @extended = " & @extended)
 
 ; Ermittelten FQDN für aktuellen User
 Global $sFQDN = _AD_SamAccountNameToFQDN()
@@ -49,17 +51,13 @@ Else
 	_UserNameSetzen()
 EndIf
 
-; *****************************************************************************
-Func _Exit()
-	Exit
-EndFunc
-
 Func _IsNumberString($String)
+; *****************************************************************************
     Return Not StringRegExp($String, "[^0-9]")
 EndFunc
 
 Func _StringReplace($sString)
-
+; *****************************************************************************
 	For $i In StringSplit("ÃŸ#ss|Ãœ#Ue|Ã„#Ae|Ã–#Oe|Ã¼#ue|Ã¤#ae|Ã¶#oe|&Uuml;#Ue|&uuml;#ue|&ouml;#oe|&Ouml;#Oe|&auml;#ae|&Auml;#Ae|&szlig#ss|ß#ss|Ä#Ae|Ö#Oe|Ü#Ue|ä#ae|ö#oe|ü#ue|Â#A|À#A|Á#A|â#a|á#a|à#a|Ê#E|È#E|É#E|ê#e|é#e|è#e|Î#I|Ì#I|Í#I|î#i|í#i|ì#i|Ô#O|Ò#O|Ó#O|ô#o|ó#o|ò#o|Û#U|Ù#U|Ú#U|û#U|ú#U|ù#U|,#|.#|-#|/#|\#|_#", "|", 2)
 		$sString = StringReplace($sString, StringLeft($i, StringInStr($i, "#", 1)-1), StringTrimleft($i, StringInStr($i, "#", 1)), 0, 1)
 	Next
@@ -69,7 +67,7 @@ Func _StringReplace($sString)
 EndFunc   ;==>_StringReplace
 
 Func _StringKurzen($sString, $nLang)
-
+; *****************************************************************************
 	Local $sSErgebnis = StringStripWS($sString, $STR_STRIPALL)
 	if StringLen($sSErgebnis) > $nLang Then
 		$sSErgebnis = StringMid($sSErgebnis, 1, $nLang)   ;  StringMid( "string", start [, count = -1] )
@@ -77,15 +75,13 @@ Func _StringKurzen($sString, $nLang)
 	EndIf
 
 	Return $sSErgebnis
-
 EndFunc	  ;==>_StringKurzen
 
 Func _UserNameSetzen()
+; *****************************************************************************
 ; Personalnummer, Benutzername, Password werden abgefragt
-; Frage nach Personalnummer!
-	Do
-		$nPersNr = InputBox("Benutzer Personalnummer", "Tragen Sie bitte die Personalnummer ein", "123")
-	Until _IsNumberString($nPersNr)
+; Frage nach ........
+; *****************************************************************************
 
 ; Frage nach Nachname!
 	$sStrNanchname = InputBox("Benutzer Nachname", "Bitte Nachname eingeben." & @CRLF & " z.B : Mustermann", "", "")
@@ -111,22 +107,31 @@ Func _UserNameSetzen()
 
 ; Soft-M und i5 Benutzername
 	; Personal Nummer =
-	$sStrADUseBIG = StringUpper($sStrADUser)				; TOEWSRU - für Benutzerprofil im SoftM-Sachbearbeiter
-	; Display Ergebnis.
+	Do
+		$nPersNr = InputBox("Benutzer Personalnummer", "Tragen Sie bitte die Personalnummer ein", "123")
+	Until _IsNumberString($nPersNr)
+
+	; für Benutzerprofil im SoftM-Sachbearbeiter
+	$sStrADUseBIG = StringUpper($sStrADUser)				; TOEWSRU
     ;MsgBox($MB_SYSTEMMODAL, "Benutzerprofil", $sStrADUseBIG)
 
 ; Frage nach passwort!
     $sPasswd = InputBox("Benutzer Kennwort", "Benutzer " & $sStrADUser & " Passwort eingeben." & @CRLF & "Maximal 9 Zeichen lang." & @CRLF & "Ohne Umlauten", "", "*M9")
-	; Display Ergebnis.
     ;MsgBox($MB_SYSTEMMODAL, "", $sPasswd)
 
 EndFunc 	;==>_UserNameSetzen
 
 Func _PasswordSetzen($sUser, $sPasswd)
-	; Setzen oder löschen Password für User oder Computer
+; *****************************************************************************
+;
+; Setzen oder löschen Password für User oder Computer
+; *****************************************************************************
 	Local $iValueModPasswd = _AD_SetPassword($sUser, $sPasswd)
 	If $iValueModPasswd = 1 Then
-		MsgBox(64, "Active Directory Password", "Passwort für '" & $sUser & "' gesetzt")
+		;MsgBox(64, "Active Directory Password", "Passwort für '" & $sUser & "' gesetzt")
+		;$Result = _AD_DisablePasswordChange($sUser)
+		$Result = _AD_DisablePasswordExpire($sUser)
+		ConsoleWrite("Result: " & $Result & ", error: " & @error & ", extended: " & @extended)
 	ElseIf @error = 1 Then
 		MsgBox(64, "Active Directory Password", "User '" & $sUser & "' does not exist")
 	Else
@@ -136,7 +141,10 @@ Func _PasswordSetzen($sUser, $sPasswd)
 EndFunc 	;==>_PasswordSetzen
 
 Func _AttributeSetzenUnivers($sUser, $sAttrubut, $sAttrWert)
-	; Kontoattributen setzen
+; *****************************************************************************
+;
+; Kontoattributen setzen
+; *****************************************************************************
 	Local $iValueModDescript = _AD_ModifyAttribute($sUser, $sAttrubut, $sAttrWert)
 	If $iValueModDescript = 1 Then
 		;MsgBox(64, "Active Directory Attribut", "Attribut '" & $sAttrubut & "' hinterlegt")
@@ -149,7 +157,10 @@ Func _AttributeSetzenUnivers($sUser, $sAttrubut, $sAttrWert)
 EndFunc		;==>_AttributeSertzenUnivers
 
 Func _GruppenMitglied($sUser, $sGroup)
-	; AD-User zu Gruppe hinzufügen
+; *****************************************************************************
+;
+; AD-User zu Gruppe hinzufügen
+; *****************************************************************************
 	Local $iValue = _AD_AddUserToGroup($sGroup, $sUser)
 	If $iValue = 1 Then
 		;MsgBox(64, "Active Directory Gruppenmitglied", "User '" & $sUser & "' erfolgreich hinzugefügt zu '" & $sGroup & "'")
@@ -166,30 +177,34 @@ Func _GruppenMitglied($sUser, $sGroup)
 EndFunc		;==>_GruppenMitglied
 
 Func _BasisOrdnerCreate($sUser)
-	; Ordner Besitzer & Vollzugriff für User (inklusive Unterordner)
+; *****************************************************************************
+;
+; Ordner Besitzer & Vollzugriff für User (inklusive Unterordner)
+; *****************************************************************************
 	Local $sBasisFolder = $sHomeDirectory & $sUser
 	DirCreate($sBasisFolder)
 	If FileExists($sBasisFolder) Then
-		MsgBox(4096, "", $sBasisFolder & " wurde angelegt.")
+		;MsgBox(4096, "", $sBasisFolder & " wurde angelegt.")
 
 		; icacls D:\Beispielordner /grant znil\Beispielgruppe:(CI)(OI)(M)
 		Local $sCommand = "icacls " & $sBasisFolder & " /grant " & $sUser & ":(CI)(OI)(F)"
 		Local $sCommandOwner = "icacls " & $sBasisFolder & " /setowner " & $sUser & " /T /C" 	; "takeown /U " & $sUser & " /F " & $sBasisFolder & " /R /D Y /SKIPSL"
 
 		Local $iPID = Run(@ComSpec & " /C " & $sCommand, "", @SW_HIDE, 8)
-		MsgBox($MB_SYSTEMMODAL, "PID", $sCommand & ": " & $iPID)
+		;MsgBox($MB_SYSTEMMODAL, "PID", $sCommand & ": " & $iPID)
 
 		$iPID = Run(@ComSpec & " /C " & $sCommandOwner, "", @SW_HIDE, 8)
-		MsgBox($MB_SYSTEMMODAL, "PID", $sCommandOwner & ": " & $iPID)
-
+		;MsgBox($MB_SYSTEMMODAL, "PID", $sCommandOwner & ": " & $iPID)
+	Else
+		MsgBox(4096, "", $sBasisFolder & " Konnte nicht erstellt werden.")
 	EndIf
 
 EndFunc 	;==>_BasisOrdner
 
 Func _add_SoftM_User()
 ; *****************************************************************************
-;
-; Verbindung zu DB2 / AS 400 ohne ODBC.
+; Benutzer für SoftM und AS400 erstellen
+; per Verbindung zu DB2 / AS 400 ohne ODBC.
 ; *****************************************************************************
 ; Initialize COM error handler
 Global $oMyError = ObjEvent("AutoIt.Error","MyErrFunc")
@@ -239,31 +254,16 @@ $sqlCon.close
 
 EndFunc		;==>_add_SoftM_User
 
-Func MyErrFunc()
-  $HexNumber=hex($oMyError.number,8)
-  Msgbox(0,"COM Test","We intercepted a COM Error !"       & @CRLF  & @CRLF & _
-             "err.description is: "    & @TAB & $oMyError.description    & @CRLF & _
-             "err.windescription:"     & @TAB & $oMyError.windescription & @CRLF & _
-             "err.number is: "         & @TAB & $HexNumber              & @CRLF & _
-             "err.lastdllerror is: "   & @TAB & $oMyError.lastdllerror   & @CRLF & _
-             "err.scriptline is: "     & @TAB & $oMyError.scriptline     & @CRLF & _
-             "err.source is: "         & @TAB & $oMyError.source         & @CRLF & _
-             "err.helpfile is: "       & @TAB & $oMyError.helpfile       & @CRLF & _
-             "err.helpcontext is: "    & @TAB & $oMyError.helpcontext _
-            )
-  SetError(1)  ; to check for after this function returns
-Endfunc   ;==>MyErrFunc
-
 Func _add_Intranet_User()
 ; *****************************************************************************
-;
-; Verbindung zu MS-SQL without an ODBC.
+; Benutzerdaten im Intranet ablegen
+; per Verbindung zu MS-SQL without an ODBC.
 ; *****************************************************************************
 Local $bGefunden = False
 Local $sEmail = $sNickName & "@" & $sDomainName
 
 Local $sMySQL = ("SELECT * FROM benutzer WHERE login_ad LIKE '" & $sStrADUser &"'")
-Local $sValues = ("'" & $sStrNanchnameOK & "', '" & $sStrVornameOK & "', '" & $nPersNr & "', '" &  $sEmail  & "', '" &  $sStrADUser  & "', '" &  $sPasswd  & "', '" &  $sStrADUseBIG & "', '" &  $sPasswd & "', 'A', 'benutzer', 'on'")
+Local $sValues = ("'" & $sStrNanchnameOK & "', '" & $sStrVornameLang & "', '" & $nPersNr & "', '" &  $sEmail  & "', '" &  $sStrADUser  & "', '" &  $sPasswd  & "', '" &  $sStrADUseBIG & "', '" &  $sPasswd & "', 'A', 'benutzer', 'on'")
 
 ; Only for SQL server
 $objConn = ObjCreate("ADODB.Connection")
@@ -289,10 +289,6 @@ $objConn.Close
 
 EndFunc 	;==>_add_Intranet_User
 
-Func _add_Archiv_User()
-	; Pustekuchen
-EndFunc 	;==>_add_Archiv_User
-
 Func _create_Postfach()
 ; *****************************************************************************
 ; Beta 1
@@ -301,7 +297,22 @@ Func _create_Postfach()
 
 EndFunc 	;==>_create_Postfach
 
-; Alle Eingaben zu OU und dem User kontrollieren und anpassen
+Func _add_Archiv_User()
+; *****************************************************************************
+; Pustekuchen
+; *****************************************************************************
+EndFunc 	;==>_add_Archiv_User
+
+Func _prn_Login_Info()
+; *****************************************************************************
+; Pustekuchen
+; Anmeldedaten an Drucker
+; *****************************************************************************
+EndFunc 	;==>_prn_Login_Info
+
+; *****************************************************************************
+; ab hier alle Eingaben zu OU und dem User kontrollieren und anpassen
+; *****************************************************************************
 #region ### START Koda GUI section ### Form=
 Global $Form1_1 = GUICreate("Quick User Management", 716, 446, 298, 229)
 GUICtrlCreateLabel("Überprüfe die :", 16, 8, 223, 17)
@@ -343,6 +354,7 @@ While 1
 
 			if BitAnd(GUICtrlRead($CheckSoftM),$GUI_CHECKED) = $GUI_CHECKED then
 				$bSoftM = True
+				$sMenu = GUICtrlRead($ComboSoftmMenu)
 				if BitAnd(GUICtrlRead($CheckWaage),$GUI_CHECKED) = $GUI_CHECKED then
 					$bWaage = True
 				EndIf
@@ -361,16 +373,17 @@ While 1
 			EndIf
 
 			$sDMS = GUICtrlRead($ComboDMS)
-			$sMenu = GUICtrlRead($ComboSoftmMenu)
             ExitLoop
     EndSwitch
 WEnd
 
-; Create a new user
+; *****************************************************************************
+; Benutzer erstellen und Parametern setzen
+; *****************************************************************************
 Global $iValueAD = _AD_CreateUser($sOU, $sUser, $sStrADUserText)
 If $iValueAD = 1 Then
     MsgBox(64, "Active Directory Manipulation Ergebnis", "User '" & $sUser & "' in OU '" & $sOU & "' erfolgreich erstellt")
-	;Sleep(2000)
+	Sleep(2000)
 	_AttributeSetzenUnivers($sUser, "name", $sStrADUserRoh)							; +Strätker, Markus
 	_AttributeSetzenUnivers($sUser, "displayName", $sStrADUserRoh)					; Strätker, Markus
 	_AttributeSetzenUnivers($sUser, "description", $sDescription)					; == Logistik ==
@@ -397,20 +410,26 @@ If $iValueAD = 1 Then
 	_AttributeSetzenUnivers($sUser, "countryCode", "276")
 	_AttributeSetzenUnivers($sUser, "c", "DE")
 	_AttributeSetzenUnivers($sUser, "co", "Deutschland")
-	; ExchangeQuotas setzen
+
+	; Exchange Postfach erstellen
+	;_AD_CreateMailbox($sUser, "Mailbox Store (" & $mailServer & ")")			; DESVR-MAIL01
+
+	; ExchangeQuotas setzen !!!!! Alle Angaben werden entfernt nach dem Postfach erstellt wird
 	_AttributeSetzenUnivers($sUser, "mDBStorageQuota", "503317")
 	_AttributeSetzenUnivers($sUser, "mDBOverQuotaLimit", "524288")
 	_AttributeSetzenUnivers($sUser, "mDBOverHardQuotaLimit", "629146")
-	_AttributeSetzenUnivers($sUser, "mAPIRecipient", "TRUE")
+	_AttributeSetzenUnivers($sUser, "mAPIRecipient", "TRUE")		; bleibt bestehen
 	; Gruppenmitgliedschaft
 	_GruppenMitglied($sUser, "Benutzer")
 	_GruppenMitglied($sUser, "vDesktop-FHU-01")
-	_GruppenMitglied($sUser, "Benutzer SoftM DE")
+	_GruppenMitglied($sUser, "appCRM")
+	;_GruppenMitglied($sUser, "Benutzer SoftM DE")
 	_GruppenMitglied($sUser, $sDMS)
 
 	_PasswordSetzen($sUser, $sPasswd)
 	_BasisOrdnerCreate($sUser)
 	If $bSoftM Then
+		_GruppenMitglied($sUser, "Benutzer SoftM DE")
 		_add_SoftM_User()
 	EndIf
 
@@ -426,5 +445,27 @@ Else
     MsgBox(64, "Active Directory Manipulation Ergebnis", "Return code '" & @error & "' from Active Directory")
 EndIf
 
+; *****************************************************************************
 ; Close Connection to the Active Directory
 _AD_Close()
+
+Func MyErrFunc()
+; *****************************************************************************
+  $HexNumber=hex($oMyError.number,8)
+  Msgbox(0,"COM Test","We intercepted a COM Error !"       & @CRLF  & @CRLF & _
+             "err.description is: "    & @TAB & $oMyError.description    & @CRLF & _
+             "err.windescription:"     & @TAB & $oMyError.windescription & @CRLF & _
+             "err.number is: "         & @TAB & $HexNumber              & @CRLF & _
+             "err.lastdllerror is: "   & @TAB & $oMyError.lastdllerror   & @CRLF & _
+             "err.scriptline is: "     & @TAB & $oMyError.scriptline     & @CRLF & _
+             "err.source is: "         & @TAB & $oMyError.source         & @CRLF & _
+             "err.helpfile is: "       & @TAB & $oMyError.helpfile       & @CRLF & _
+             "err.helpcontext is: "    & @TAB & $oMyError.helpcontext _
+            )
+  SetError(1)  ; to check for after this function returns
+Endfunc   ;==>MyErrFunc
+
+Func _Exit()
+; *****************************************************************************
+	Exit
+EndFunc
