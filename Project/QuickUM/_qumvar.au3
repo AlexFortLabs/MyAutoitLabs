@@ -17,6 +17,10 @@ Global $sHomeDrive = "P:"
 
 Global $sDomainName = "funkegruppe.de"
 Global $sParentOU = "CN=Users,DC=funkegruppe,DC=de"
+
+; HomeMDB = 		; LDAP-Pfad zur Datenbank
+; msExchMailboxServerName = 			; Auch dieses Feld sollte "gefüllt" sein, weil einiger Code das noch abprüft, aber maßgeblich für den zuständigen Server ist der aktive Server für die HomeMDB
+
 Const $mailServer = "DESVR-MAIL01"
 
 ; SoftM / AS400
@@ -26,4 +30,6 @@ Const $sFirma = "01"
 Const $sRechte = 70
 Global $sMenu = "IVEROOT" 			; IEKROOT ...IROOT
 
+Global $bSoftM = False
 Global $bWaage = False
+Global $bPostfach = False

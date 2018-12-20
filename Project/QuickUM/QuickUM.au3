@@ -41,14 +41,14 @@ _AD_Open()
 If @error Then Exit MsgBox(16, "Active Directory Skript", "Unerwartetes Problem in der Funktion _AD_Open. @error: " & @CRLF & @CRLF & @error & ", @extended = " & @extended)
 
 ; Ermittelten FQDN für aktuellen User
-Global $sFQDN = _AD_SamAccountNameToFQDN()
+Global $sFQDN = _AD_SamAccountNameToFQDN() 			; NT4 Domänen Username zwecks Kompatibilität
 
 Global $iReply = MsgBox(308, "Active Directory Manipulation", "Dieses Skript erstellt einen neuen Benutzer in der angegebener OU." & @CRLF & @CRLF & _
         "Möchten Sie Änderungen in  Active Directory vornehmen?")
 If $iReply <> 6 Then
 	Exit
 Else
-	_UserNameSetzen()
+	_Anwenderangaben()
 EndIf
 
 Func _IsNumberString($String)
@@ -77,7 +77,7 @@ Func _StringKurzen($sString, $nLang)
 	Return $sSErgebnis
 EndFunc	  ;==>_StringKurzen
 
-Func _UserNameSetzen()
+Func _Anwenderangaben()
 ; *****************************************************************************
 ; Personalnummer, Benutzername, Password werden abgefragt
 ; Frage nach ........
@@ -119,7 +119,7 @@ Func _UserNameSetzen()
     $sPasswd = InputBox("Benutzer Kennwort", "Benutzer " & $sStrADUser & " Passwort eingeben." & @CRLF & "Maximal 9 Zeichen lang." & @CRLF & "Ohne Umlauten", "", "*M9")
     ;MsgBox($MB_SYSTEMMODAL, "", $sPasswd)
 
-EndFunc 	;==>_UserNameSetzen
+EndFunc 	;==>_Anwenderangaben
 
 Func _PasswordSetzen($sUser, $sPasswd)
 ; *****************************************************************************
@@ -128,10 +128,11 @@ Func _PasswordSetzen($sUser, $sPasswd)
 ; *****************************************************************************
 	Local $iValueModPasswd = _AD_SetPassword($sUser, $sPasswd)
 	If $iValueModPasswd = 1 Then
-		;MsgBox(64, "Active Directory Password", "Passwort für '" & $sUser & "' gesetzt")
+		MsgBox(64, "Active Directory Password", "Passwort für '" & $sUser & "' gesetzt")
 		;$Result = _AD_DisablePasswordChange($sUser)
 		$Result = _AD_DisablePasswordExpire($sUser)
-		ConsoleWrite("Result: " & $Result & ", error: " & @error & ", extended: " & @extended)
+		;ConsoleWrite("Result: " & $Result & ", error: " & @error & ", extended: " & @extended)
+		MsgBox(64, "Active Directory Password: " & $Result, "Error: " & @error & " extended: " & @extended)
 	ElseIf @error = 1 Then
 		MsgBox(64, "Active Directory Password", "User '" & $sUser & "' does not exist")
 	Else
@@ -147,7 +148,7 @@ Func _AttributeSetzenUnivers($sUser, $sAttrubut, $sAttrWert)
 ; *****************************************************************************
 	Local $iValueModDescript = _AD_ModifyAttribute($sUser, $sAttrubut, $sAttrWert)
 	If $iValueModDescript = 1 Then
-		;MsgBox(64, "Active Directory Attribut", "Attribut '" & $sAttrubut & "' hinterlegt")
+		MsgBox(64, "Active Directory Attribut", "Attribut '" & $sAttrubut & "' hinterlegt")
 	ElseIf @error = 1 Then
 		MsgBox(64, "Active Directory Attribut", "User '" & $sUser & "' does not exist")
 	Else
@@ -163,7 +164,7 @@ Func _GruppenMitglied($sUser, $sGroup)
 ; *****************************************************************************
 	Local $iValue = _AD_AddUserToGroup($sGroup, $sUser)
 	If $iValue = 1 Then
-		;MsgBox(64, "Active Directory Gruppenmitglied", "User '" & $sUser & "' erfolgreich hinzugefügt zu '" & $sGroup & "'")
+		MsgBox(64, "Active Directory Gruppenmitglied", "User '" & $sUser & "' erfolgreich hinzugefügt zu '" & $sGroup & "'")
 	ElseIf @error = 1 Then
 		MsgBox(64, "Active Directory Gruppenmitglied", "Gruppe '" & $sGroup & "' nicht vorhanden")
 	ElseIf @error = 2 Then
@@ -289,11 +290,22 @@ $objConn.Close
 
 EndFunc 	;==>_add_Intranet_User
 
-Func _create_Postfach()
+Func _create_Postfach($sUser)
 ; *****************************************************************************
 ; Beta 1
 ; Create a mailbox for a user.
 ; *****************************************************************************
+;~ 	_AttributeSetzenUnivers($sUser, "mail", $sNickName & "@" & $sDomainName)	; !!! Primäre Mailadresse des Benutzers
+;~ 	_AttributeSetzenUnivers($sUser, "mailNickname", $sNickName)					; !!! Exchange Alias, welcher als Basis für Mailadressen/MAPI-Profils dient
+;~ ; ExchangeQuotas setzen !!!!! Teste - Alle Angaben werden entfernt nach dem Postfach erstellt wird?
+;~ 	_AttributeSetzenUnivers($sUser, "mDBStorageQuota", "503317")
+;~ 	_AttributeSetzenUnivers($sUser, "mDBOverQuotaLimit", "524288")
+;~ 	_AttributeSetzenUnivers($sUser, "mDBOverHardQuotaLimit", "629146")
+;~ 	;_AttributeSetzenUnivers($sUser, "mDBUseDefaults", "FALSE")		; sonst bekommt Postfach Standard-Kontingenteinstellungen
+;~ 	_AttributeSetzenUnivers($sUser, "mAPIRecipient", "TRUE")		; bleibt bestehen
+
+	; Exchange Postfach erstellen
+	_AD_CreateMailbox($sUser, "Mailbox Store (" & $mailServer & ")")			; DESVR-MAIL01
 
 EndFunc 	;==>_create_Postfach
 
@@ -331,7 +343,7 @@ Global $CheckWaage = GUICtrlCreateCheckbox("Waage User", 344, 168, 97, 17)
 Global $CheckIntranet = GUICtrlCreateCheckbox("Intranet User", 48, 200, 97, 17)
 GUICtrlSetState(-1, $GUI_CHECKED)
 GUICtrlCreateGroup("", -99, -99, 1, 1)
-Global $ComboDMS = GUICtrlCreateCombo("DMS auswählen", 16, 249, 345, 25)
+Global $ComboDMS = GUICtrlCreateCombo("Rechnungsprüfer", 16, 249, 345, 25)
 GUICtrlSetData(-1, "DMS_Arbeitschutz|DMS_Arbeitsvorbereitung|DMS_Baumarkt|DMS_Betriebsrat|DMS_Buchhaltung|DMS_Controlling|DMS_Einkauf|DMS_Export_Tiefbau|DMS_Logistik|DMS_PL|DMS_QM_QS|DMS_Vertrieb_Tiefbau")
 Global $ComboSoftmMenu = GUICtrlCreateCombo("SoftM-Menu auswählen", 384, 249, 313, 25, BitOR($CBS_DROPDOWN,$CBS_AUTOHSCROLL))
 GUICtrlSetData(-1, "IVEROOT|IAVROOT|IEKROOT|ILOROOT|IROOT")
@@ -369,7 +381,8 @@ While 1
 			EndIf
 
 			if BitAnd(GUICtrlRead($CheckMail),$GUI_CHECKED) = $GUI_CHECKED then
-				_create_Postfach()
+				$bPostfach = True
+				;_create_Postfach()
 			EndIf
 
 			$sDMS = GUICtrlRead($ComboDMS)
@@ -383,25 +396,23 @@ WEnd
 Global $iValueAD = _AD_CreateUser($sOU, $sUser, $sStrADUserText)
 If $iValueAD = 1 Then
     MsgBox(64, "Active Directory Manipulation Ergebnis", "User '" & $sUser & "' in OU '" & $sOU & "' erfolgreich erstellt")
-	Sleep(2000)
+	Sleep(1000)
 	_AttributeSetzenUnivers($sUser, "name", $sStrADUserRoh)							; +Strätker, Markus
 	_AttributeSetzenUnivers($sUser, "displayName", $sStrADUserRoh)					; Strätker, Markus
 	_AttributeSetzenUnivers($sUser, "description", $sDescription)					; == Logistik ==
-	_AttributeSetzenUnivers($sUser, "givenName", $sStrVorname)						; Markus
+	_AttributeSetzenUnivers($sUser, "givenName", $sStrVorname)						; Vorname des Anwenders - Markus
 	_AttributeSetzenUnivers($sUser, "employeeID", $nPersNr)							; Personal Nummer z.B = 537
 	; wenn Waage Logistik
-	if $bWaage Then
+	if $bWaage = True Then
 		_AttributeSetzenUnivers($sUser, "employeeNumber", 6000 + $nPersNr)			; Personal Nummer Logistik Waage = 6537
 	EndIf
 	_AttributeSetzenUnivers($sUser, "userAccountControl", 512)						; 512 - NORMAL_ACCOUNT (Default user)
 	_AttributeSetzenUnivers($sUser, "homeDirectory", $sHomeDirectory & $sStrADUser)
 	_AttributeSetzenUnivers($sUser, "homeDrive", $sHomeDrive)
 	_AttributeSetzenUnivers($sUser, "l", "Hamm")
-	;_AttributeSetzenUnivers($sUser, "mail", $sNickName & "@" & $sDomainName)
-	;_AttributeSetzenUnivers($sUser, "mailNickname", $sNickName)
 	;_AttributeSetzenUnivers($sUser, "physicalDeliveryOfficeName", "Büro Halle 3") 	; Büro Halle 3
 	_AttributeSetzenUnivers($sUser, "postalCode", "59071")
-	_AttributeSetzenUnivers($sUser, "sn", $sStrNanchname)							; Strätker
+	_AttributeSetzenUnivers($sUser, "sn", $sStrNanchname)							; Nachname des Anwenders - Strätker
 	_AttributeSetzenUnivers($sUser, "st", "NRW")
 	_AttributeSetzenUnivers($sUser, "streetAddress", "Siegenbeckstraße 15")
 	_AttributeSetzenUnivers($sUser, "telephoneNumber", "02388 3071-")
@@ -411,24 +422,24 @@ If $iValueAD = 1 Then
 	_AttributeSetzenUnivers($sUser, "c", "DE")
 	_AttributeSetzenUnivers($sUser, "co", "Deutschland")
 
-	; Exchange Postfach erstellen
-	;_AD_CreateMailbox($sUser, "Mailbox Store (" & $mailServer & ")")			; DESVR-MAIL01
+	; Wenn Postfach benötigt
+	If $bPostfach = True Then
+		_create_Postfach($sUser)
+	EndIf
 
-	; ExchangeQuotas setzen !!!!! Alle Angaben werden entfernt nach dem Postfach erstellt wird
-	_AttributeSetzenUnivers($sUser, "mDBStorageQuota", "503317")
-	_AttributeSetzenUnivers($sUser, "mDBOverQuotaLimit", "524288")
-	_AttributeSetzenUnivers($sUser, "mDBOverHardQuotaLimit", "629146")
-	_AttributeSetzenUnivers($sUser, "mAPIRecipient", "TRUE")		; bleibt bestehen
 	; Gruppenmitgliedschaft
 	_GruppenMitglied($sUser, "Benutzer")
 	_GruppenMitglied($sUser, "vDesktop-FHU-01")
 	_GruppenMitglied($sUser, "appCRM")
 	;_GruppenMitglied($sUser, "Benutzer SoftM DE")
-	_GruppenMitglied($sUser, $sDMS)
+	If $sDMS <> "Rechnungsprüfer" Then
+		_GruppenMitglied($sUser, $sDMS)
+		MsgBox(64, "DMS", "User '" & $sOU & "' als Rechnungsprüfer aufgenomen")
+	EndIf
 
 	_PasswordSetzen($sUser, $sPasswd)
 	_BasisOrdnerCreate($sUser)
-	If $bSoftM Then
+	If $bSoftM = True Then
 		_GruppenMitglied($sUser, "Benutzer SoftM DE")
 		_add_SoftM_User()
 	EndIf
