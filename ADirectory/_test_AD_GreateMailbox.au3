@@ -79,9 +79,11 @@ WEnd
 ;Global $mailServer = $sServer		; DESVR-MAIL01
 ;Global $iValue = _AD_CreateMailbox($sUser, $sMailbox, $sIStore, $sServer, $sGroup, $sServerGroup)
 ;Global $iValue = _AD_CreateMailbox($sUser, "Mailbox Store (" & $sServer & ")")
-Global $iValue = _AD_CreateMailbox($sUser, "Mailbox Store (" & $sMailbox & ")", "First Storage Group", $sServer, "First Administrative Group", $sServerGroup)
 ;Global $iValue = _AD_CreateMailbox($sUser, "smtp.funkegruppe.de") 	;"Mailbox Store (" & $sServer & ")")
 ;Global $iValue = _AD_CreateMailboxPS($sUser, "desvr-mail-fws.funkegruppe.de") 	; per PShell - habe Code 7
+;Global $iValue = _AD_CreateMailbox($sUser, "/o=FUNKEGRUPPE/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn=DESVR-MAIL01")
+Global $iValue = _AD_CreateMailbox($sUser, "Mailbox Store (" & $sMailbox & ")", "First Storage Group", $sServer, "First Administrative Group", $sServerGroup)
+
 If $iValue = 1 Then
 	MsgBox(64, "Active Directory Functions - Example 1", "Mailbox for User '" & $sUser & "' successfully created")
 ElseIf @error = 1 Then

@@ -5,6 +5,7 @@
  AutoIt Version : 3.3.14.5
  Language ......: DE
  Description ...: Script enthält Funktionen zu Manipulation in Aktive Directory.
+ Author ........: Alexander Fortowski
  ===============================================================================================================================
 
 #ce ----------------------------------------------------------------------------
@@ -20,6 +21,7 @@
 #include <StringConstants.au3>
 #include <ButtonConstants.au3>
 #include <GUIConstantsEx.au3>
+#include <TabConstants.au3>
 
 
 #include <ComboConstants.au3>
@@ -32,7 +34,7 @@
 
 HotKeySet("{ESC}", "_Exit")
 
-; *****************************************************************************
+; ================================================================================
 
 ; Bau Verbindung zu Active Directory
 ;_AD_Open($SUserId, $SPassword,)
@@ -51,13 +53,15 @@ Else
 	_Anwenderangaben()
 EndIf
 
+; #FUNCTION# =====================================================================
 Func _IsNumberString($String)
-; *****************************************************************************
+; ================================================================================
     Return Not StringRegExp($String, "[^0-9]")
-EndFunc
+EndFunc ;==> _IsNumberString
 
+; #FUNCTION# =====================================================================
 Func _StringReplace($sString)
-; *****************************************************************************
+; ================================================================================
 	For $i In StringSplit("ÃŸ#ss|Ãœ#Ue|Ã„#Ae|Ã–#Oe|Ã¼#ue|Ã¤#ae|Ã¶#oe|&Uuml;#Ue|&uuml;#ue|&ouml;#oe|&Ouml;#Oe|&auml;#ae|&Auml;#Ae|&szlig#ss|ß#ss|Ä#Ae|Ö#Oe|Ü#Ue|ä#ae|ö#oe|ü#ue|Â#A|À#A|Á#A|â#a|á#a|à#a|Ê#E|È#E|É#E|ê#e|é#e|è#e|Î#I|Ì#I|Í#I|î#i|í#i|ì#i|Ô#O|Ò#O|Ó#O|ô#o|ó#o|ò#o|Û#U|Ù#U|Ú#U|û#U|ú#U|ù#U|,#|.#|-#|/#|\#|_#", "|", 2)
 		$sString = StringReplace($sString, StringLeft($i, StringInStr($i, "#", 1)-1), StringTrimleft($i, StringInStr($i, "#", 1)), 0, 1)
 	Next
@@ -66,8 +70,9 @@ Func _StringReplace($sString)
 
 EndFunc   ;==>_StringReplace
 
+; #FUNCTION# =====================================================================
 Func _StringKurzen($sString, $nLang)
-; *****************************************************************************
+; ================================================================================
 	Local $sSErgebnis = StringStripWS($sString, $STR_STRIPALL)
 	if StringLen($sSErgebnis) > $nLang Then
 		$sSErgebnis = StringMid($sSErgebnis, 1, $nLang)   ;  StringMid( "string", start [, count = -1] )
@@ -77,11 +82,12 @@ Func _StringKurzen($sString, $nLang)
 	Return $sSErgebnis
 EndFunc	  ;==>_StringKurzen
 
+; #FUNCTION# =====================================================================
 Func _Anwenderangaben()
-; *****************************************************************************
-; Personalnummer, Benutzername, Password werden abgefragt
+; ================================================================================
+; Personalnummer, Benutzername, Password... werden abgefragt
 ; Frage nach ........
-; *****************************************************************************
+; ================================================================================
 
 ; Frage nach Nachname!
 	$sStrNanchname = InputBox("Benutzer Nachname", "Bitte Nachname eingeben." & @CRLF & " z.B : Mustermann", "", "")
@@ -112,7 +118,7 @@ Func _Anwenderangaben()
 	Until _IsNumberString($nPersNr)
 
 	; für Benutzerprofil im SoftM-Sachbearbeiter
-	$sStrADUseBIG = StringUpper($sStrADUser)				; TOEWSRU
+	$sStrADUseBIG = StringUpper($sStrADUser)				; TOENSRU
     ;MsgBox($MB_SYSTEMMODAL, "Benutzerprofil", $sStrADUseBIG)
 
 ; Frage nach passwort!
@@ -121,50 +127,64 @@ Func _Anwenderangaben()
 
 EndFunc 	;==>_Anwenderangaben
 
-Func _PasswordSetzen($sUser, $sPasswd)
-; *****************************************************************************
+; #FUNCTION# =====================================================================
+Func _PasswordSetzen($sUser, $sPasswd="123456789")
+; ================================================================================
 ;
 ; Setzen oder löschen Password für User oder Computer
-; *****************************************************************************
+; ================================================================================
 	Local $iValueModPasswd = _AD_SetPassword($sUser, $sPasswd)
 	If $iValueModPasswd = 1 Then
-		MsgBox(64, "Active Directory Password", "Passwort für '" & $sUser & "' gesetzt")
+		;MsgBox(64, "Active Directory Password", "Passwort für '" & $sUser & "' gesetzt")
+		$sBericht &= ($nVorgang & " Active Directory Password für " & $sUser & " gesetzt" & @CRLF)
 		;$Result = _AD_DisablePasswordChange($sUser)
 		$Result = _AD_DisablePasswordExpire($sUser)
 		;ConsoleWrite("Result: " & $Result & ", error: " & @error & ", extended: " & @extended)
-		MsgBox(64, "Active Directory Password: " & $Result, "Error: " & @error & " extended: " & @extended)
+		_Set_Progressbar()
+		;MsgBox(64, "Active Directory Password: " & $Result, "Error: " & @error & " extended: " & @extended)
+		$sBericht &= ($nVorgang & " AD Password Expired " & $Result & " extended: " & @extended & @CRLF)
 	ElseIf @error = 1 Then
-		MsgBox(64, "Active Directory Password", "User '" & $sUser & "' does not exist")
+		MsgBox(64, "Active Directory Password setzen", "User '" & $sUser & "' does not exist")
 	Else
-		MsgBox(64, "Active Directory Password", "Return code '" & @error & "' from Active Directory")
+		MsgBox(64, "Active Directory Password setzen", "Return code '" & @error & "' from Active Directory")
 	EndIf
 
 EndFunc 	;==>_PasswordSetzen
 
-Func _AttributeSetzenUnivers($sUser, $sAttrubut, $sAttrWert)
-; *****************************************************************************
+; #FUNCTION# =====================================================================
+Func _AttributeSetzenUnivers($sUser, $sAttrubut, $sAttrWert, $nFuncDelay=100)
+; ================================================================================
 ;
 ; Kontoattributen setzen
-; *****************************************************************************
+; ================================================================================
+	Sleep($nFuncDelay)
 	Local $iValueModDescript = _AD_ModifyAttribute($sUser, $sAttrubut, $sAttrWert)
 	If $iValueModDescript = 1 Then
-		MsgBox(64, "Active Directory Attribut", "Attribut '" & $sAttrubut & "' hinterlegt")
+		;MsgBox(64, "Active Directory Attribut", "Attribut '" & $sAttrubut & "' hinterlegt")
+		;$nVorgang += 1
+		_Set_Progressbar()
+		$sBericht &= ($nVorgang & " Attribut " & $sAttrubut & " hinterlegt" & @CRLF)
 	ElseIf @error = 1 Then
 		MsgBox(64, "Active Directory Attribut", "User '" & $sUser & "' does not exist")
 	Else
-		MsgBox(64, "Active Directory Attribut", "Return code '" & @error & "' from Active Directory")
+		MsgBox(64, "Active Directory Attribut", "dennoch Return code '" & @error & "' from Active Directory: " & $sAttrubut)
 	EndIf
 
 EndFunc		;==>_AttributeSertzenUnivers
 
-Func _GruppenMitglied($sUser, $sGroup)
-; *****************************************************************************
+; #FUNCTION# =====================================================================
+Func _GruppenMitglied($sUser, $sGroup, $nFuncDelay=100)
+; ================================================================================
 ;
 ; AD-User zu Gruppe hinzufügen
-; *****************************************************************************
-	Local $iValue = _AD_AddUserToGroup($sGroup, $sUser)
-	If $iValue = 1 Then
-		MsgBox(64, "Active Directory Gruppenmitglied", "User '" & $sUser & "' erfolgreich hinzugefügt zu '" & $sGroup & "'")
+; ================================================================================
+	Sleep($nFuncDelay)
+	Local $iValueAddGrp = _AD_AddUserToGroup($sGroup, $sUser)
+	If $iValueAddGrp = 1 Then
+		;MsgBox(64, "Active Directory Gruppenmitglied", "User '" & $sUser & "' erfolgreich hinzugefügt zu '" & $sGroup & "'")
+		;$nVorgang += 1
+		_Set_Progressbar()
+		$sBericht &= ($nVorgang & " User " & $sUser & " erfolgreich hinzugefügt zu " & $sGroup & @CRLF)
 	ElseIf @error = 1 Then
 		MsgBox(64, "Active Directory Gruppenmitglied", "Gruppe '" & $sGroup & "' nicht vorhanden")
 	ElseIf @error = 2 Then
@@ -172,21 +192,25 @@ Func _GruppenMitglied($sUser, $sGroup)
 	ElseIf @error = 3 Then
 		MsgBox(64, "Active Directory Gruppenmitglied", "User '" & $sUser & "' bereits Mitglied in '" & $sGroup & "'")
 	Else
-		MsgBox(64, "Active Directory Gruppenmitglied", "Return code '" & @error & "' from Active Directory")
+		MsgBox(64, "Active Directory Gruppenmitglied", "AddGrp Return code '" & @error & "' from Active Directory")
 	EndIf
 
 EndFunc		;==>_GruppenMitglied
 
+; #FUNCTION# =====================================================================
 Func _BasisOrdnerCreate($sUser)
-; *****************************************************************************
+; ================================================================================
 ;
 ; Ordner Besitzer & Vollzugriff für User (inklusive Unterordner)
-; *****************************************************************************
+; ================================================================================
 	Local $sBasisFolder = $sHomeDirectory & $sUser
 	DirCreate($sBasisFolder)
 	If FileExists($sBasisFolder) Then
+		_Set_Progressbar()
 		;MsgBox(4096, "", $sBasisFolder & " wurde angelegt.")
+		$sBericht &= ($nVorgang & $sBasisFolder & " wurde angelegt." & @CRLF)
 
+		; Ordner: Domänengruppe Ändern (inklusive Unterordner)
 		; icacls D:\Beispielordner /grant znil\Beispielgruppe:(CI)(OI)(M)
 		Local $sCommand = "icacls " & $sBasisFolder & " /grant " & $sUser & ":(CI)(OI)(F)"
 		Local $sCommandOwner = "icacls " & $sBasisFolder & " /setowner " & $sUser & " /T /C" 	; "takeown /U " & $sUser & " /F " & $sBasisFolder & " /R /D Y /SKIPSL"
@@ -202,11 +226,12 @@ Func _BasisOrdnerCreate($sUser)
 
 EndFunc 	;==>_BasisOrdner
 
+; #FUNCTION# =====================================================================
 Func _add_SoftM_User()
-; *****************************************************************************
+; ================================================================================
 ; Benutzer für SoftM und AS400 erstellen
 ; per Verbindung zu DB2 / AS 400 ohne ODBC.
-; *****************************************************************************
+; ================================================================================
 ; Initialize COM error handler
 Global $oMyError = ObjEvent("AutoIt.Error","MyErrFunc")
 
@@ -233,33 +258,44 @@ If Not @error Then
 		$sMail & "', " & $sRechte & ", '" & $sMenu & "', '" & $sProfiel & "'"
 
 	;MsgBox(64, "Testumgebung", "INSERT INTO SMKDIFT.XSB00 (" & $vRow & ") VALUES(" & $vValue & ")")
-	MsgBox(64, "Produktivumgebung", "INSERT INTO SMKDIFP.XSB00 (" & $vRow & ") VALUES(" & $vValue & ")")
-	$sqlCon.execute ("INSERT INTO SMKDIFP.XSB00 (" & $vRow & ") VALUES(" & $vValue & ")")	; !!! Password wird nicht gespeichert !!!
+
+	$sqlCon.execute ("INSERT INTO SMKDIFP.XSB00 (" & $vRow & ") VALUES(" & $vValue & ")")	; !!! Password wird nicht immer gespeichert !!!
+
+	_Set_Progressbar()
+	;MsgBox(64, "Produktivumgebung", "INSERT INTO SMKDIFP.XSB00 (" & $vRow & ") VALUES(" & $vValue & ")")
+	$sBericht &= ($nVorgang & "In Produktivumgebung " & $nPersNr & " hinzugefügt " & $sProfiel & @CRLF)
 
 	; wenn Sachbearbeiter aus Logistik-Waage dann (6+PersNr) für zweites Konto
-	if $bWaage Then
+	if $bCheckWaage = True Then
 		$vValue = 6000 + $nPersNr & ", " & $sAbteilung & ", '" & $sFirma & "', '" & $sName & "', '" & $sKurzname & "', '" & $sKurzname & "', '" & $sKurzname & "', '" & StringUpper($sPasswd) & "', '" & _
 			$sMail & "', " & $sRechte & ", '" & $sMenu & "', '" & $sProfiel & "'"
 		;MsgBox(64, "Testumgebung", "INSERT INTO SMKDIFT.XSB00 (" & $vRow & ") VALUES(" & $vValue & ")")
-		MsgBox(64, "Profuktivumgebung", "INSERT INTO SMKDIFP.XSB00 (" & $vRow & ") VALUES(" & $vValue & ")")
-		$sqlCon.execute ("INSERT INTO SMKDIFP.XSB00 (" & $vRow & ") VALUES(" & $vValue & ")")	; !!! Password wird nicht gespeichert !!!
+		$sqlCon.execute ("INSERT INTO SMKDIFP.XSB00 (" & $vRow & ") VALUES(" & $vValue & ")")	; !!! Password wird nicht immer gespeichert !!!
+
+		_Set_Progressbar()
+		;MsgBox(64, "Profuktivumgebung", "INSERT INTO SMKDIFP.XSB00 (" & $vRow & ") VALUES(" & $vValue & ")")
+		$sBericht &= ($nVorgang & "In Produktivumgebung " & (6000 + $nPersNr) & " hinzugefügt " & $sProfiel & @CRLF)
+
 	EndIf
 
 	; Benutzer / Benutzerprofiel auf AS400 erstellen
 	$CMD2 = "RMTCMD CRTUSRPRF USRPRF(" & $sProfiel & ") PASSWORD(" & $sPasswd & ") PWDEXP(*NO) INLMNU(*SIGNOFF) TEXT('" & $sNameV2 & "') SPCAUT(*NONE) JOBD(QGPL/QDFTJOBD) GRPPRF(SOFTM) OWNER(*GRPPRF)"
-	MsgBox(0, "", "Profiel: " & $CMD2)
-	RunWait(@ComSpec & " /q /c " & $CMD2,@ScriptDir,@SW_HIDE)
+	$ERRORCODE = RunWait(@ComSpec & " /q /c " & $CMD2,@ScriptDir,@SW_HIDE)
+	_Set_Progressbar()
+	;MsgBox(0, "", "Profiel: " & $CMD2)
+	$sBericht &= ($nVorgang & " Benutzerprofiel " & $sProfiel & " zu AS400 mit ERRORCODE = " & $ERRORCODE & @CRLF)
 EndIf
 
 $sqlCon.close
 
 EndFunc		;==>_add_SoftM_User
 
+; #FUNCTION# =====================================================================
 Func _add_Intranet_User()
-; *****************************************************************************
+; ================================================================================
 ; Benutzerdaten im Intranet ablegen
 ; per Verbindung zu MS-SQL without an ODBC.
-; *****************************************************************************
+; ================================================================================
 Local $bGefunden = False
 Local $sEmail = $sNickName & "@" & $sDomainName
 
@@ -279,77 +315,136 @@ With $rsCustomers
     .Close
 EndWith
 
-If $bGefunden Then
+If $bGefunden = True Then
 	MsgBox(64, "User Intranet", "Im Intanet ist User '" & $sStrADUser & "' bereits vorhanden. Angaben sind unverändert")
 Else
 	$rsCustomers = $objConn.Execute("INSERT INTO benutzer (nachname, vorname, personalnummer, email, login_ad, kennwort_ad, login_as400, kennwort_as400, status, art, status_intranet) VALUES (" & $sValues & ")")
-	MsgBox(64, "User Intranet", "Im Intanet ist User '" & $sStrADUser & "' neu hinterlegt")
+
+	_Set_Progressbar()
+	;MsgBox(64, "User Intranet", "Im Intanet ist User '" & $sStrADUser & "' neu hinterlegt")
+	$sBericht &= ($nVorgang & "Im Intanet ist User " & $sStrADUser & " neu hinterlegt" & @CRLF)
 EndIf
 
 $objConn.Close
 
 EndFunc 	;==>_add_Intranet_User
 
+; #FUNCTION# =====================================================================
 Func _create_Postfach($sUser)
-; *****************************************************************************
+; ================================================================================
 ; Beta 1
 ; Create a mailbox for a user.
-; *****************************************************************************
+; ================================================================================
 ;~ 	_AttributeSetzenUnivers($sUser, "mail", $sNickName & "@" & $sDomainName)	; !!! Primäre Mailadresse des Benutzers
 ;~ 	_AttributeSetzenUnivers($sUser, "mailNickname", $sNickName)					; !!! Exchange Alias, welcher als Basis für Mailadressen/MAPI-Profils dient
-;~ ; ExchangeQuotas setzen !!!!! Teste - Alle Angaben werden entfernt nach dem Postfach erstellt wird?
+;~ ; ExchangeQuotas setzen 	!!!!! Teste - Alle Angaben werden entfernt nach dem Postfach erstellt wird?
 ;~ 	_AttributeSetzenUnivers($sUser, "mDBStorageQuota", "503317")
 ;~ 	_AttributeSetzenUnivers($sUser, "mDBOverQuotaLimit", "524288")
 ;~ 	_AttributeSetzenUnivers($sUser, "mDBOverHardQuotaLimit", "629146")
 ;~ 	;_AttributeSetzenUnivers($sUser, "mDBUseDefaults", "FALSE")		; sonst bekommt Postfach Standard-Kontingenteinstellungen
 ;~ 	_AttributeSetzenUnivers($sUser, "mAPIRecipient", "TRUE")		; bleibt bestehen
-
+	_AttributeSetzenUnivers($sUser, "msExchHomeServerName", $sExchHomeServer)
 	; Exchange Postfach erstellen
-	_AD_CreateMailbox($sUser, "Mailbox Store (" & $mailServer & ")")			; DESVR-MAIL01
+	;_AD_CreateMailbox($sUser, $sExchHomeServer)
+	_AD_CreateMailbox($sUser, "Mailbox Store (" & $sMailServer & ")")			; DESVR-MAIL01
+
+	_Set_Progressbar()
+	$sBericht &= ($nVorgang & "Postfach auf " & $sMailServer & " neu hinterlegt" & @CRLF)
 
 EndFunc 	;==>_create_Postfach
 
+; #FUNCTION# =====================================================================
+Func _Set_Progressbar($i = 1)
+	$nVorgang += $i
+	If $nVorgang > 100 Then
+		GUICtrlSetData($idProgressBar1, 100)
+	Else
+		GUICtrlSetData($idProgressBar1, $nVorgang)
+	EndIf
+EndFunc  	;==> _Set_Progressbar
+
+; #FUNCTION# =====================================================================
 Func _add_Archiv_User()
-; *****************************************************************************
+; ================================================================================
 ; Pustekuchen
-; *****************************************************************************
+; ================================================================================
+	_Set_Progressbar(20)
+
 EndFunc 	;==>_add_Archiv_User
 
+; #FUNCTION# =====================================================================
 Func _prn_Login_Info()
-; *****************************************************************************
+; ================================================================================
 ; Pustekuchen
-; Anmeldedaten an Drucker
-; *****************************************************************************
+; (Die Login-Daten vom neu erstellten User ausdrucken )
+; ================================================================================
 EndFunc 	;==>_prn_Login_Info
 
-; *****************************************************************************
+; ================================================================================
 ; ab hier alle Eingaben zu OU und dem User kontrollieren und anpassen
-; *****************************************************************************
+; ================================================================================
 #region ### START Koda GUI section ### Form=
-Global $Form1_1 = GUICreate("Quick User Management", 716, 446, 298, 229)
-GUICtrlCreateLabel("Überprüfe die :", 16, 8, 223, 17)
-GUICtrlCreateLabel("Dein Benutzeranmeldename:", 16, 40, 223, 17)
-GUICtrlCreateLabel("Prüfe Personal Nummer:", 16, 80, 215, 17)
-Global $IOU = GUICtrlCreateInput($sParentOU, 240, 8, 459, 21)
-Global $IUser = GUICtrlCreateInput($sStrADUser, 240, 40, 459, 21)
-Global $IPersNr = GUICtrlCreateInput($nPersNr, 240, 72, 459, 21)
-Global $Group1 = GUICtrlCreateGroup("Resourcen", 16, 112, 681, 121)
-Global $CheckSoftM = GUICtrlCreateCheckbox("SoftM User", 48, 136, 97, 17)
+;##########################################################
+Global $GuiForm = GUICreate("Quick User Management", 714, 496, 315, 245)
+Global $tab = GUICtrlCreateTab(10, 2, 692, 480)
+GUICtrlCreateTabItem("User neu erstellen")
+GUICtrlSetImage(-1, "shell32.dll", 235, 0)
+GUICtrlCreateLabel("Eine einfache Kontrolle und Bestätigung, bitte!", 28, 37, 647, 33, $SS_CENTER)
+GUICtrlSetFont(-1, 12, 400, 0, "Arial")
+GUICtrlCreateLabel("Als Benutzeranmeldename:", 28, 79, 215, 17)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+GUICtrlCreateLabel("Prüfe Personal Nummer:", 28, 112, 215, 17)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+
+Global $IUser = GUICtrlCreateInput($sStrADUser, 260, 77, 416, 22)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+Global $IPersNr = GUICtrlCreateInput($nPersNr, 260, 109, 416, 22)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+
+Global $IOU = GUICtrlCreateInput($sParentOU, 260, 141, 416, 22)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+
+Global $Group1 = GUICtrlCreateGroup("Resourcen", 28, 173, 649, 121)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+Global $CheckSoftM = GUICtrlCreateCheckbox("SoftM User", 60, 197, 97, 17)
 GUICtrlSetState(-1, $GUI_CHECKED)
-Global $CheckArchiv = GUICtrlCreateCheckbox("Archiv User", 48, 168, 97, 17)
-Global $CheckMail = GUICtrlCreateCheckbox("Mail Empfänger", 344, 136, 109, 20)
+Global $CheckArchiv = GUICtrlCreateCheckbox("Archiv User", 60, 261, 97, 17)
+Global $CheckMail = GUICtrlCreateCheckbox("Mail Empfänger", 396, 197, 109, 20)
 GUICtrlSetState(-1, $GUI_CHECKED)
-Global $CheckWaage = GUICtrlCreateCheckbox("Waage User", 344, 168, 97, 17)
-Global $CheckIntranet = GUICtrlCreateCheckbox("Intranet User", 48, 200, 97, 17)
+Global $CheckWaage = GUICtrlCreateCheckbox("Waage User", 60, 229, 97, 17)
+Global $CheckIntranet = GUICtrlCreateCheckbox("Intranet User", 396, 261, 97, 17)
+GUICtrlSetState(-1, $GUI_CHECKED)
+Global $CheckCRM = GUICtrlCreateCheckbox("CRM Anwender", 396, 230, 94, 17)
 GUICtrlSetState(-1, $GUI_CHECKED)
 GUICtrlCreateGroup("", -99, -99, 1, 1)
-Global $ComboDMS = GUICtrlCreateCombo("Rechnungsprüfer", 16, 249, 345, 25)
+Global $ComboDMS = GUICtrlCreateCombo("Kein Rechnungsprüfer", 364, 302, 313, 25)
 GUICtrlSetData(-1, "DMS_Arbeitschutz|DMS_Arbeitsvorbereitung|DMS_Baumarkt|DMS_Betriebsrat|DMS_Buchhaltung|DMS_Controlling|DMS_Einkauf|DMS_Export_Tiefbau|DMS_Logistik|DMS_PL|DMS_QM_QS|DMS_Vertrieb_Tiefbau")
-Global $ComboSoftmMenu = GUICtrlCreateCombo("SoftM-Menu auswählen", 384, 249, 313, 25, BitOR($CBS_DROPDOWN,$CBS_AUTOHSCROLL))
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+Global $ComboSoftmMenu = GUICtrlCreateCombo("SoftM-Menu auswählen", 28, 302, 313, 25, BitOR($CBS_DROPDOWN,$CBS_AUTOHSCROLL))
 GUICtrlSetData(-1, "IVEROOT|IAVROOT|IEKROOT|ILOROOT|IROOT")
-Global $BOK = GUICtrlCreateButton("Benutzer erstellen", 8, 396, 121, 33)
-Global $BCancel = GUICtrlCreateButton("Abrechen", 628, 396, 73, 33, $BS_DEFPUSHBUTTON)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+Global $BOK = GUICtrlCreateButton("Benutzer erstellen", 28, 427, 121, 40)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+Global $BCancel = GUICtrlCreateButton("Abrechen", 600, 427, 77, 40, $BS_DEFPUSHBUTTON)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+Global $idProgressBar1 = GUICtrlCreateProgress(28, 392, 649, 25)
+
+GUICtrlCreateTabItem("User als Kopie")
+GUICtrlSetImage(-1, "shell32.dll", 267, 0)
+GUICtrlCreateLabel("Path", 36, 64, 416, 17)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+GUICtrlCreateButton("OK", 296, 139, 70, 30)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+
+GUICtrlCreateTabItem("?")
+GUICtrlSetImage(-1, "shell32.dll", -222, 0)
+GUICtrlCreateLabel("Des F1 - hebt ji öwwerdäönig", 40, 61, 416, 17)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+GUICtrlCreateButton("OK", 296, 139, 70, 30)
+GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+;GUICtrlCreateTabItem("")
 GUISetState(@SW_SHOW)
+
 #endregion ### END Koda GUI section ###
 
 While 1
@@ -365,15 +460,24 @@ While 1
 			$nPersNr = GUICtrlRead($IPersNr)
 
 			if BitAnd(GUICtrlRead($CheckSoftM),$GUI_CHECKED) = $GUI_CHECKED then
-				$bSoftM = True
+				$bCheckSoftM = True
 				$sMenu = GUICtrlRead($ComboSoftmMenu)
 				if BitAnd(GUICtrlRead($CheckWaage),$GUI_CHECKED) = $GUI_CHECKED then
-					$bWaage = True
+					$bCheckWaage = True
 				EndIf
+			Else
+				$bCheckSoftM = False
+				$bCheckWaage = False
 			EndIf
 
 			if BitAnd(GUICtrlRead($CheckIntranet),$GUI_CHECKED) = $GUI_CHECKED then
 				_add_Intranet_User()
+			EndIf
+
+			If BitAND(GUICtrlRead($CheckCRM),$GUI_CHECKED) = $GUI_CHECKED Then
+				$bCheckCRM = True
+			Else
+				$bCheckCRM = False
 			EndIf
 
 			if BitAnd(GUICtrlRead($CheckArchiv),$GUI_CHECKED) = $GUI_CHECKED then
@@ -381,8 +485,7 @@ While 1
 			EndIf
 
 			if BitAnd(GUICtrlRead($CheckMail),$GUI_CHECKED) = $GUI_CHECKED then
-				$bPostfach = True
-				;_create_Postfach()
+				$bCheckPostfach = True
 			EndIf
 
 			$sDMS = GUICtrlRead($ComboDMS)
@@ -390,29 +493,31 @@ While 1
     EndSwitch
 WEnd
 
-; *****************************************************************************
+; ================================================================================
 ; Benutzer erstellen und Parametern setzen
-; *****************************************************************************
+; ================================================================================
 Global $iValueAD = _AD_CreateUser($sOU, $sUser, $sStrADUserText)
 If $iValueAD = 1 Then
-    MsgBox(64, "Active Directory Manipulation Ergebnis", "User '" & $sUser & "' in OU '" & $sOU & "' erfolgreich erstellt")
-	Sleep(1000)
-	_AttributeSetzenUnivers($sUser, "name", $sStrADUserRoh)							; +Strätker, Markus
-	_AttributeSetzenUnivers($sUser, "displayName", $sStrADUserRoh)					; Strätker, Markus
-	_AttributeSetzenUnivers($sUser, "description", $sDescription)					; == Logistik ==
-	_AttributeSetzenUnivers($sUser, "givenName", $sStrVorname)						; Vorname des Anwenders - Markus
-	_AttributeSetzenUnivers($sUser, "employeeID", $nPersNr)							; Personal Nummer z.B = 537
+    ;MsgBox(64, "Quick User Management Tool", "Ergebnis: User '" & $sUser & "' ist in '" & $sOU & "' erfolgreich erstellt")
+	;$nVorgang += 1
+	_Set_Progressbar()
+	$sBericht &= ($nVorgang & " User " & $sUser & " erfolgreich hinzugefügt zu " & $sOU & @CRLF)
+	;_AttributeSetzenUnivers($sUser, "name", $sStrADUserRoh, 1000)							; +Töns, Rudolf
+	_AttributeSetzenUnivers($sUser, "displayName", $sStrADUserRoh)							; Töns, Rudolf
+	_AttributeSetzenUnivers($sUser, "description", $sDescription)							; == Logistik ==
+	_AttributeSetzenUnivers($sUser, "givenName", $sStrVorname)								; Vorname des Anwenders - Rudolf
+	_AttributeSetzenUnivers($sUser, "employeeID", $nPersNr)									; Personal Nummer z.B = 537
 	; wenn Waage Logistik
-	if $bWaage = True Then
-		_AttributeSetzenUnivers($sUser, "employeeNumber", 6000 + $nPersNr)			; Personal Nummer Logistik Waage = 6537
+	if $bCheckWaage = True Then
+		_AttributeSetzenUnivers($sUser, "employeeNumber", 6000 + $nPersNr)					; Personal Nummer Logistik Waage = 6537
 	EndIf
-	_AttributeSetzenUnivers($sUser, "userAccountControl", 512)						; 512 - NORMAL_ACCOUNT (Default user)
+	_AttributeSetzenUnivers($sUser, "userAccountControl", 512)								; 512 - NORMAL_ACCOUNT (Default user)
 	_AttributeSetzenUnivers($sUser, "homeDirectory", $sHomeDirectory & $sStrADUser)
 	_AttributeSetzenUnivers($sUser, "homeDrive", $sHomeDrive)
 	_AttributeSetzenUnivers($sUser, "l", "Hamm")
-	;_AttributeSetzenUnivers($sUser, "physicalDeliveryOfficeName", "Büro Halle 3") 	; Büro Halle 3
+	;_AttributeSetzenUnivers($sUser, "physicalDeliveryOfficeName", "Büro Halle 3") 			; Büro Halle 3
 	_AttributeSetzenUnivers($sUser, "postalCode", "59071")
-	_AttributeSetzenUnivers($sUser, "sn", $sStrNanchname)							; Nachname des Anwenders - Strätker
+	_AttributeSetzenUnivers($sUser, "sn", $sStrNanchname)									; Nachname des Anwenders - Töns
 	_AttributeSetzenUnivers($sUser, "st", "NRW")
 	_AttributeSetzenUnivers($sUser, "streetAddress", "Siegenbeckstraße 15")
 	_AttributeSetzenUnivers($sUser, "telephoneNumber", "02388 3071-")
@@ -422,48 +527,62 @@ If $iValueAD = 1 Then
 	_AttributeSetzenUnivers($sUser, "c", "DE")
 	_AttributeSetzenUnivers($sUser, "co", "Deutschland")
 
-	; Wenn Postfach benötigt
-	If $bPostfach = True Then
-		_create_Postfach($sUser)
-	EndIf
+	_PasswordSetzen($sUser, $sPasswd)
+	_BasisOrdnerCreate($sUser)
 
 	; Gruppenmitgliedschaft
 	_GruppenMitglied($sUser, "Benutzer")
 	_GruppenMitglied($sUser, "vDesktop-FHU-01")
-	_GruppenMitglied($sUser, "appCRM")
-	;_GruppenMitglied($sUser, "Benutzer SoftM DE")
-	If $sDMS <> "Rechnungsprüfer" Then
-		_GruppenMitglied($sUser, $sDMS)
-		MsgBox(64, "DMS", "User '" & $sOU & "' als Rechnungsprüfer aufgenomen")
+
+	; Wenn Postfach benötigt
+	If $bCheckPostfach = True Then
+		_create_Postfach($sUser)
 	EndIf
 
-	_PasswordSetzen($sUser, $sPasswd)
-	_BasisOrdnerCreate($sUser)
-	If $bSoftM = True Then
+	; CRM Anwender
+	If $bCheckCRM = True Then
+		_GruppenMitglied($sUser, "appCRM")
+	EndIf
+
+	If $sDMS <> "Kein Rechnungsprüfer" Then
+		_GruppenMitglied($sUser, $sDMS)
+		;MsgBox(64, "DMS", "User '" & $sOU & "' als Rechnungsprüfer aufgenomen")
+	EndIf
+
+	If $bCheckSoftM = True Then
 		_GruppenMitglied($sUser, "Benutzer SoftM DE")
 		_add_SoftM_User()
 	EndIf
 
 ElseIf @error = 1 Then
-    MsgBox(64, "Active Directory Manipulation Ergebnis", "User '" & $sUser & "' ist bereits vorhanden")
+    MsgBox(64, "Quick User Management Tool", "User '" & $sUser & "' ist bereits vorhanden")
 ElseIf @error = 2 Then
-    MsgBox(64, "Active Directory Manipulation Ergebnis", "OU '" & $sOU & "' ist nicht vorhanden")
+    MsgBox(64, "Quick User Management Tool", "OU '" & $sOU & "' ist nicht vorhanden")
 ElseIf @error = 3 Then
-    MsgBox(64, "Active Directory Manipulation Ergebnis", "Werte für CN (e.g. Lastname Firstname) nicht vorhanden")
+    MsgBox(64, "Quick User Management Tool", "Werte für CN (e.g. Lastname Firstname) nicht vorhanden")
 ElseIf @error = 4 Then
-    MsgBox(64, "Active Directory Manipulation Ergebnis", "Wert für $sAD_User nicht vorhanden")
+    MsgBox(64, "Quick User Management Tool", "Wert für sUser '" & $sUser & "' nicht vorhanden")
 Else
-    MsgBox(64, "Active Directory Manipulation Ergebnis", "Return code '" & @error & "' from Active Directory")
+    MsgBox(64, "Quick User Management Tool", "Return code '" & @error & "' from Active Directory")
 EndIf
 
-; *****************************************************************************
+; ================================================================================
+; Bericht
+MsgBox(64, "Active Directory Manipulation Ergebnis", $sBericht)
+
+; ================================================================================
 ; Close Connection to the Active Directory
 _AD_Close()
 
+; #FUNCTION# =====================================================================
 Func MyErrFunc()
-; *****************************************************************************
-  $HexNumber=hex($oMyError.number,8)
-  Msgbox(0,"COM Test","We intercepted a COM Error !"       & @CRLF  & @CRLF & _
+; ================================================================================
+	Switch $oMyError.number
+		Case 0x80020009 	; -2147352567 beim Attribut name
+			Return
+		Case Else
+			$HexNumber=hex($oMyError.number,8)
+			Msgbox(0+16+8192+262144,"Error Handler","An error occurred in the application! "       & @CRLF  & @CRLF & _
              "err.description is: "    & @TAB & $oMyError.description    & @CRLF & _
              "err.windescription:"     & @TAB & $oMyError.windescription & @CRLF & _
              "err.number is: "         & @TAB & $HexNumber              & @CRLF & _
@@ -473,10 +592,13 @@ Func MyErrFunc()
              "err.helpfile is: "       & @TAB & $oMyError.helpfile       & @CRLF & _
              "err.helpcontext is: "    & @TAB & $oMyError.helpcontext _
             )
-  SetError(1)  ; to check for after this function returns
+			SetError(1)  ; to check for after this function returns
+			Exit($oMyError.number)
+	EndSwitch
 Endfunc   ;==>MyErrFunc
 
+; #FUNCTION# =====================================================================
 Func _Exit()
-; *****************************************************************************
+; ================================================================================
 	Exit
-EndFunc
+EndFunc ;==> _Exit
